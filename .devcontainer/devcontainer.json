@@ -16,16 +16,24 @@
 
 	// Set *default* container specific settings.json values on container create.
 	"settings": { 
-		"terminal.integrated.shell.linux": "/bin/bash"
+		"terminal.integrated.shell.linux": "/bin/bash",
+
+		"go.useGoProxyToCheckForToolUpdates": false,
+		"go.gopath": "/go",
+		"go.goroot": "/usr/local/go",
+		"go.toolsGopath": "/go/bin",
+		"go.formatTool": "gofmt",
+		"go.useLanguageServer": true
 	},
 
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
-		"ms-azuretools.vscode-docker"
+		"ms-azuretools.vscode-docker",
+		"golang.Go",
 	],
 	
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [9000],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "docker --version",
