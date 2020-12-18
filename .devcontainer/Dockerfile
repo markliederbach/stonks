@@ -4,14 +4,26 @@ FROM mcr.microsoft.com/vscode/devcontainers/go:0-${VARIANT}
 
 # [Optional] Uncomment this section to install additional OS packages.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends gnupg2
+    && apt-get -y install --no-install-recommends \
+        gnupg2 \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        gnupg-agent \
+        software-properties-common
 
-# RUN cd /usr/local \
-#     && wget -c https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz \
-#     && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-
-# ENV PATH=$PATH:/usr/local/go/bin
-# ENV GOPATH=/go
-
-# RUN go get -v golang.org/x/tools/gopls \
-#     && go get -v github.com/go-delve/delve/cmd/dlv
+# Install Docker
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - \
+    && apt-key fingerprint 0EBFCD88 \
+    && add-apt-repository \
+        "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+        $(lsb_release -cs) \
+        stable" \
+    && apt-get update \
+    && apt-get install  -y install --no-install-recommends \
+        docker-ce \
+        docker-ce-cli \
+        containerd.io \
+    && groupadd docker \
+    && usermod -aG docker vscode \
+    && systemctl enable docker
