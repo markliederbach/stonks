@@ -12,6 +12,8 @@
 	"settings": { 
 		"terminal.integrated.shell.linux": "/bin/bash",
 
+		"go.useGoProxyToCheckForToolUpdates": false,
+		"go.gopath": "/go",
 		"go.formatTool": "gofmt",
 		"go.useLanguageServer": true
 	},

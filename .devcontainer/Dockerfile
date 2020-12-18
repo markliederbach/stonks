@@ -15,5 +15,6 @@ RUN cd /usr/local \
     && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
 
 ENV PATH=$PATH:/usr/local/go/bin
+ENV GOPATH=/go
 
 RUN go get -v golang.org/x/tools/gopls
