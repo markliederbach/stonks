@@ -34,4 +34,5 @@ CMD [ "sleep", "infinity" ]
 
 # Install VS Code Go deps
 RUN set -ex \
-    && go get -v golang.org/x/tools/gopls
+    && go get -v golang.org/x/tools/gopls \
+    && go get -v github.com/go-delve/delve/cmd/dlv
