@@ -3,7 +3,9 @@ ARG VARIANT="1"
 FROM mcr.microsoft.com/vscode/devcontainers/go:0-${VARIANT}
 
 # [Optional] Uncomment this section to install additional OS packages.
-RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+RUN set -ex \
+    && apt-get update \
+    && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
         gnupg2 \
         apt-transport-https \
@@ -13,7 +15,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         software-properties-common
 
 # Install Docker
-RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - \
+RUN set -ex \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - \
     && apt-key fingerprint 0EBFCD88 \
     && add-apt-repository \
         "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
