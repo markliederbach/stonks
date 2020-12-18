@@ -1,20 +1,17 @@
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.154.0/containers/ubuntu/.devcontainer/base.Dockerfile
-
-# [Choice] Ubuntu version: bionic, focal
-ARG VARIANT="focal"
-FROM mcr.microsoft.com/vscode/devcontainers/base:0-${VARIANT}
-
-ARG GO_VERSION
+# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.137.0/containers/go/.devcontainer/base.Dockerfile
+ARG VARIANT="1"
+FROM mcr.microsoft.com/vscode/devcontainers/go:0-${VARIANT}
 
 # [Optional] Uncomment this section to install additional OS packages.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends gnupg2
 
-RUN cd /usr/local \
-    && wget -c https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz \
-    && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+# RUN cd /usr/local \
+#     && wget -c https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz \
+#     && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
 
-ENV PATH=$PATH:/usr/local/go/bin
-ENV GOPATH=/go
+# ENV PATH=$PATH:/usr/local/go/bin
+# ENV GOPATH=/go
 
-RUN go get -v golang.org/x/tools/gopls
+# RUN go get -v golang.org/x/tools/gopls \
+#     && go get -v github.com/go-delve/delve/cmd/dlv

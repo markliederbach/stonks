@@ -1,11 +1,11 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.154.0/containers/ubuntu
 {
-	"name": "Ubuntu",
+	"name": "Go",
 	"build": {
 		"dockerfile": "Dockerfile",
 		// Update 'VARIANT' to pick an Ubuntu version: focal, bionic
-		"args": { "VARIANT": "focal", "GO_VERSION": "1.15.6" }
+		"args": { "VARIANT": "1" }
 	},
 
 	// Set *default* container specific settings.json values on container create.
@@ -14,6 +14,8 @@
 
 		"go.useGoProxyToCheckForToolUpdates": false,
 		"go.gopath": "/go",
+		"go.goroot": "/usr/local/go",
+		"go.toolsGopath": "/go/bin",
 		"go.formatTool": "gofmt",
 		"go.useLanguageServer": true
 	},
