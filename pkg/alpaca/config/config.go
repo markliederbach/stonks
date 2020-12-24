@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/alpacahq/alpaca-trade-api-go/common"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	alpacaAPIBaseURLVariable   string = "ALPACA_API_BASE_URL"
-	alpacaAPIKeyIDVariable     string = "ALPACA_API_KEY_ID"
-	alpacaAPISecretKeyVariable string = "ALPACA_API_SECRET_KEY"
-	logLevelVariable           string = "LOG_LEVEL"
+	alpacaAPIBaseURLVariable string = "APCA_API_BASE_URL"
+	logLevelVariable         string = "LOG_LEVEL"
 
 	defaultLogLevel logrus.Level = logrus.InfoLevel
 )
@@ -33,8 +32,8 @@ func Load() Config {
 	config := Config{
 		// Required
 		AlpacaAPIBaseURL:   fromEnvString(alpacaAPIBaseURLVariable, true, ""),
-		AlpacaAPIKeyID:     fromEnvString(alpacaAPIKeyIDVariable, true, ""),
-		AlpacaAPISecretKey: fromEnvString(alpacaAPISecretKeyVariable, true, ""),
+		AlpacaAPIKeyID:     fromEnvString(common.EnvApiKeyID, true, ""),
+		AlpacaAPISecretKey: fromEnvString(common.EnvApiSecretKey, true, ""),
 
 		// Optional
 		LogLevel: fromEnvLogLevel(logLevelVariable, false, defaultLogLevel),

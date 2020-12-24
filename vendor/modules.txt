@@ -1,3 +1,11 @@
+# github.com/alpacahq/alpaca-trade-api-go v1.7.0
+## explicit
+github.com/alpacahq/alpaca-trade-api-go/alpaca
+github.com/alpacahq/alpaca-trade-api-go/common
+# github.com/gorilla/websocket v1.4.0
+github.com/gorilla/websocket
+# github.com/shopspring/decimal v1.2.0
+github.com/shopspring/decimal
 # github.com/sirupsen/logrus v1.7.0
 ## explicit
 github.com/sirupsen/logrus
