@@ -1,13 +1,17 @@
 package controller
 
 import (
+	"fmt"
+	"math"
 	"strconv"
 	"time"
 
-	"github.com/alpacahq/alpaca-trade-api-go/alpaca"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alpacahq/alpaca-trade-api-go/stream"
 )
 
+// MartingaleController implements the martingale system for tracking a stock
 type MartingaleController struct {
 	client        AlpacaClient
 	tickSize      int
@@ -30,7 +34,8 @@ type streak struct {
 	increasing bool
 }
 
-func NewMartingaleController(client *alpaca.Client, stock string) (MartingaleController, error) {
+// NewMartingaleController returns a new MartingaleController after initializing with Alpaca
+func NewMartingaleController(client AlpacaClient, stock string) (MartingaleController, error) {
 	// Cancel any open orders so they don't interfere with this script
 	if err := client.CancelAllOrders(); err != nil {
 		return MartingaleController{}, err
@@ -39,9 +44,13 @@ func NewMartingaleController(client *alpaca.Client, stock string) (MartingaleCon
 	var currentPosition int64
 	position, err := client.GetPosition(stock)
 	if err != nil {
-		// No position exists
-		// currentPosition = 0
-		return MartingaleController{}, err
+
+		if err.Error() != "position does not exist" {
+			return MartingaleController{}, err
+		}
+
+		// No position exists, set to zero
+		currentPosition = 0
 	} else {
 		currentPosition = position.Qty.IntPart()
 	}
@@ -59,7 +68,11 @@ func NewMartingaleController(client *alpaca.Client, stock string) (MartingaleCon
 	}
 
 	totalBuyingPower := marginMult * equity
-	logrus.Infof("Initial total buying power is %.2f", totalBuyingPower)
+	logrus.WithFields(logrus.Fields{
+		"initial_equity":       math.Round(equity*100) / 100,
+		"initial_buying_power": math.Round(totalBuyingPower*100) / 100,
+	}).Debugf("Calculated initial balances")
+
 	return MartingaleController{
 		client:    client,
 		tickSize:  5,
@@ -79,4 +92,37 @@ func NewMartingaleController(client *alpaca.Client, stock string) (MartingaleCon
 		marginMult:    marginMult,
 		seconds:       0, // TODO: what affect would this have?
 	}, nil
+}
+
+// Run kicks off the main logic of this controller
+func (c *MartingaleController) Run() error {
+
+	// First, cancel any existing orders so they don't impact our buying power.
+	status, until, limit := "open", time.Now(), 100
+	orders, _ := c.client.ListOrders(&status, &until, &limit, nil)
+	for _, order := range orders {
+		_ = c.client.CancelOrder(order.ID)
+	}
+
+	// Register a handler for the stock stream we want to watch
+	if err := stream.Register(fmt.Sprintf("T.%s", c.stock), c.handleStockEvent); err != nil {
+		return err
+	}
+
+	if err := stream.Register("trade_updates", c.handleTradeEvent); err != nil {
+		return err
+	}
+
+	// Sleep indefinitely while we wait for events
+	select {}
+}
+
+// Listen for quote data and perform trading logic
+func (c *MartingaleController) handleStockEvent(msg interface{}) {
+
+}
+
+// Listen for updates to our orders
+func (c *MartingaleController) handleTradeEvent(msg interface{}) {
+
 }

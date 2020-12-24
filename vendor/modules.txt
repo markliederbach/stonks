@@ -2,6 +2,8 @@
 ## explicit
 github.com/alpacahq/alpaca-trade-api-go/alpaca
 github.com/alpacahq/alpaca-trade-api-go/common
+github.com/alpacahq/alpaca-trade-api-go/polygon
+github.com/alpacahq/alpaca-trade-api-go/stream
 # github.com/gorilla/websocket v1.4.0
 github.com/gorilla/websocket
 # github.com/shopspring/decimal v1.2.0
@@ -12,3 +14,5 @@ github.com/sirupsen/logrus
 # golang.org/x/sys v0.0.0-20191026070338-33540a1f6037
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
+gopkg.in/matryer/try.v1
