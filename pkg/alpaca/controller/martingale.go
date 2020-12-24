@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/alpacahq/alpaca-trade-api-go/alpaca"
 	"github.com/alpacahq/alpaca-trade-api-go/stream"
 )
 
@@ -105,24 +106,74 @@ func (c *MartingaleController) Run() error {
 	}
 
 	// Register a handler for the stock stream we want to watch
-	if err := stream.Register(fmt.Sprintf("T.%s", c.stock), c.handleStockEvent); err != nil {
+	// https://alpaca.markets/docs/api-documentation/api-v2/market-data/streaming/
+	dataStreamKey := fmt.Sprintf("T.%s", c.stock)
+	if err := stream.Register(dataStreamKey, c.handleStreamTrade); err != nil {
 		return err
 	}
 
-	if err := stream.Register("trade_updates", c.handleTradeEvent); err != nil {
+	defer stream.Deregister(dataStreamKey)
+
+	// Register a handler for updates to our existing trade orders
+	if err := stream.Register(alpaca.TradeUpdates, c.handleTradeUpdate); err != nil {
 		return err
 	}
+
+	defer stream.Deregister(alpaca.TradeUpdates)
 
 	// Sleep indefinitely while we wait for events
 	select {}
 }
 
 // Listen for quote data and perform trading logic
-func (c *MartingaleController) handleStockEvent(msg interface{}) {
+func (c *MartingaleController) handleStreamTrade(msg interface{}) {
+	data, ok := msg.(alpaca.StreamTrade)
+	if !ok {
+		logrus.Error("Failed to decode stream trade")
+		return
+	}
 
+	if data.Symbol != c.stock {
+		logrus.Debugf("Ignoring stream trade event for unrelated stock %s", data.Symbol)
+		return
+	}
+
+	now := time.Now().UTC()
+	if now.Sub(c.lastTradeTime) < time.Second {
+		// don't react every tick unless at least 1 second past
+		return
+	}
+
+	c.lastTradeTime = now
+
+	// Increment or cycle the tick index
+	c.tickIndex = (c.tickIndex + 1) % c.tickSize
+
+	// Only process every n ticks
+	if c.tickIndex == 0 {
+		// It's time to update
+
+		// Update price info
+		tickOpen := c.lastPrice
+		tickClose := float64(data.Price)
+		c.lastPrice = tickClose
+
+		c.processTick(tickOpen, tickClose)
+	}
 }
 
 // Listen for updates to our orders
-func (c *MartingaleController) handleTradeEvent(msg interface{}) {
+func (c *MartingaleController) handleTradeUpdate(msg interface{}) {
 
+}
+
+func (c *MartingaleController) processTick(tickOpen float64, tickClose float64) {
+	log := logrus.WithFields(logrus.Fields{
+		"logger":     "processTick",
+		"tick_open":  math.Round(tickOpen*100) / 100,
+		"tick_close": math.Round(tickClose*100) / 100,
+	})
+
+	log.Info("Handling tick")
+	return
 }
