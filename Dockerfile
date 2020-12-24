@@ -6,10 +6,10 @@ RUN apk add --update --no-cache dumb-init
 RUN adduser --uid 1500 -D stonks
 
 # Copy only needed packages
-# COPY ./vendor $GOPATH/src/github.com/markliederbach/stonks/vendor
+COPY ./vendor $GOPATH/src/github.com/markliederbach/stonks/vendor
 COPY ./pkg $GOPATH/src/github.com/markliederbach/stonks/pkg
 COPY ./go.mod $GOPATH/src/github.com/markliederbach/stonks/go.mod
-# COPY ./go.sum $GOPATH/src/github.com/markliederbach/stonks/go.sum
+COPY ./go.sum $GOPATH/src/github.com/markliederbach/stonks/go.sum
 
 # Build
 WORKDIR $GOPATH/src/github.com/markliederbach/stonks/
