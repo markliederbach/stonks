@@ -1,5 +1,7 @@
 package controller
 
+// https://www.investopedia.com/articles/forex/06/martingale.asp
+
 import (
 	"fmt"
 	"math"
@@ -14,19 +16,33 @@ import (
 
 // MartingaleController implements the martingale system for tracking a stock
 type MartingaleController struct {
-	client        AlpacaClient
-	tickSize      int
-	tickIndex     int
-	baseBet       float64
-	currStreak    streak
-	currOrder     string
-	lastPrice     float64
+	// client performs Alpaca actions.
+	client AlpacaClient
+	// tickSize is how many ticks to wait between transactions.
+	tickSize int
+	// tickIndex tracks where in the cycle we are between transactions.
+	tickIndex int
+	// baseBet is a percentage (0 - 1.0) representing
+	// what percentage of our buying power to risk.
+	baseBet float64
+	// currStreak tracks the current streak from the latest tick.
+	currStreak streak
+	// currOrder is a unique string ID for the last order placed.
+	currOrder string
+	// lastPrice is the most recent stock price before the current tick price.
+	lastPrice float64
+	// lastTradeTime is the last time we transacted.
 	lastTradeTime time.Time
-	stock         string
-	position      int64
-	equity        float64
-	marginMult    float64
-	seconds       int
+	// stock is the symbol of the stock we are tracking.
+	stock string
+	// position is the number of shares we currently own of the stock.
+	position int64
+	// equity is the cash available in our account (before margin).
+	equity float64
+	// marginMult is the margin multiplier available for our account.
+	marginMult float64
+	// seconds TODO: what does this even do?
+	seconds int
 }
 
 type streak struct {
@@ -154,11 +170,11 @@ func (c *MartingaleController) handleStreamTrade(msg interface{}) {
 		// It's time to update
 
 		// Update price info
-		tickOpen := c.lastPrice
-		tickClose := float64(data.Price)
-		c.lastPrice = tickClose
+		previousPrice := c.lastPrice
+		newPrice := float64(data.Price)
+		c.lastPrice = newPrice
 
-		c.processTick(tickOpen, tickClose)
+		c.processTick(previousPrice, newPrice)
 	}
 }
 
@@ -167,13 +183,56 @@ func (c *MartingaleController) handleTradeUpdate(msg interface{}) {
 
 }
 
-func (c *MartingaleController) processTick(tickOpen float64, tickClose float64) {
-	log := logrus.WithFields(logrus.Fields{
-		"logger":     "processTick",
-		"tick_open":  math.Round(tickOpen*100) / 100,
-		"tick_close": math.Round(tickClose*100) / 100,
-	})
+// processTick implements the algorithm
+func (c *MartingaleController) processTick(previousPrice float64, newPrice float64) {
+	logrus.WithFields(logrus.Fields{
+		"logger":         "processTick",
+		"previous_price": math.Round(previousPrice*100) / 100,
+		"tick_price":     math.Round(newPrice*100) / 100,
+	}).Info("Handling tick")
 
-	log.Info("Handling tick")
+	// Only act on meaningful changes
+	if math.Abs(newPrice-previousPrice) >= 0.01 {
+		increasing := newPrice > previousPrice
+		if c.currStreak.increasing != increasing {
+			// It moved in the opposite direction of the tracked streak.
+			// Therefore, the tracked streak is over, and we should reset.
+			if c.position != 0 {
+				// Empty out our position
+				if _, err := c.sendOrder(0); err != nil {
+					logrus.Panic(err)
+				}
+			}
+
+			// Reset streak
+			c.currStreak.increasing = increasing
+			c.currStreak.start = newPrice
+			c.currStreak.count = 0
+		} else {
+			// Our streak continues.
+			c.currStreak.count++
+
+			// Calculate our current buying power
+			totalBuyingPower := c.equity * c.marginMult
+
+			// Use our streak, buying power, and how much we originally bet to calculate
+			// how much value we want to have in the stock.
+			targetValue := math.Pow(2, float64(c.currStreak.count)) * c.baseBet * totalBuyingPower
+
+			// Limit ourselves to roughly one share less than our total buying power.
+			targetValue = math.Min(targetValue, totalBuyingPower-newPrice)
+
+			// Calculate how many shares we need to transact
+			targetQty := int(targetValue / newPrice)
+
+			if increasing {
+				// If the streak is increasing, that means we want to
+				// sell our position
+				targetQty = -targetQty
+			}
+
+		}
+	}
+
 	return
 }
