@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/alpaca"
+	"github.com/sirupsen/logrus"
 )
 
 // AlpacaClient wraps alpaca.Client to allow easy swap-out (such as for testing)
@@ -21,5 +22,15 @@ type AlpacaClient interface {
 // their actions on a set of stream trades.
 type AlpacaAlgorithm interface {
 	// Given a stream trade, perform some action based on the data.
-	HandleStreamTrade(trade alpaca.StreamTrade)
+	HandleStreamTrade(context StreamTradeParameters)
+}
+
+// StreamTradeParameters encapsulates context that is passed from
+// a controller to the implementing algorithm
+type StreamTradeParameters struct {
+	Client     AlpacaClient
+	Stock      StockInfo
+	Account    AccountInfo
+	Trade      alpaca.StreamTrade
+	ContextLog *logrus.Entry
 }
