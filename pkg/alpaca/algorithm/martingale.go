@@ -14,13 +14,9 @@ var _ api.AlpacaAlgorithm = &Martingale{}
 
 // Martingale implements the martingale system for tracking a stock
 type Martingale struct {
-	// tickSize is how many ticks to wait between transactions.
-	tickSize int
-	// tickIndex tracks where in the cycle we are between transactions.
-	tickIndex int
-	// lastPrice is the most recent stock price before the current tick price.
-	lastPrice float64
-	// lastTradeTime is the last time we transacted.
+	tickSize      int
+	tickIndex     int
+	lastPrice     float64
 	lastTradeTime time.Time
 }
 
