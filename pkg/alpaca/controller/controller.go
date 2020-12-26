@@ -8,22 +8,22 @@ import (
 
 	"github.com/alpacahq/alpaca-trade-api-go/alpaca"
 	"github.com/alpacahq/alpaca-trade-api-go/stream"
-	"github.com/markliederbach/stonks/pkg/alpaca/interfaces"
+	"github.com/markliederbach/stonks/pkg/alpaca/api"
 	"github.com/sirupsen/logrus"
 )
 
 // AlpacaController is the backbone of the system, which supports pluggable
 // underlying algorithms.
 type AlpacaController struct {
-	client    interfaces.AlpacaClient
-	algorithm interfaces.AlpacaAlgorithm
-	stock     interfaces.StockInfo
-	account   interfaces.AccountInfo
-	order     interfaces.OrderInfo
+	client    api.AlpacaClient
+	algorithm api.AlpacaAlgorithm
+	stock     api.StockInfo
+	account   api.AccountInfo
+	order     api.OrderInfo
 }
 
 // NewAlpacaController returns an new controller.
-func NewAlpacaController(client interfaces.AlpacaClient, algorithm interfaces.AlpacaAlgorithm, stock string) (AlpacaController, error) {
+func NewAlpacaController(client api.AlpacaClient, algorithm api.AlpacaAlgorithm, stock string) (AlpacaController, error) {
 	// Cancel any open orders so they don't interfere with this script
 	if err := client.CancelAllOrders(); err != nil {
 		return AlpacaController{}, err
@@ -32,11 +32,11 @@ func NewAlpacaController(client interfaces.AlpacaClient, algorithm interfaces.Al
 	alpacaController := AlpacaController{
 		client:    client,
 		algorithm: algorithm,
-		stock: interfaces.StockInfo{
+		stock: api.StockInfo{
 			Symbol:   stock,
 			Position: 0,
 		},
-		account: interfaces.AccountInfo{},
+		account: api.AccountInfo{},
 	}
 
 	if err := alpacaController.UpdatePosition(); err != nil {
@@ -147,7 +147,7 @@ func (c *AlpacaController) handleStreamTrade(msg interface{}) {
 	}
 
 	c.algorithm.HandleStreamTrade(
-		interfaces.StreamTradeContext{
+		api.StreamTradeContext{
 			Client:     c.client,
 			Stock:      c.stock,
 			Account:    c.account,
