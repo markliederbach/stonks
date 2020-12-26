@@ -8,38 +8,22 @@ import (
 
 	"github.com/alpacahq/alpaca-trade-api-go/alpaca"
 	"github.com/alpacahq/alpaca-trade-api-go/stream"
+	"github.com/markliederbach/stonks/pkg/alpaca/interfaces"
 	"github.com/sirupsen/logrus"
 )
 
 // AlpacaController is the backbone of the system, which supports pluggable
 // underlying algorithms.
 type AlpacaController struct {
-	client    AlpacaClient
-	algorithm AlpacaAlgorithm
-	stock     StockInfo
-	account   AccountInfo
-	order     OrderInfo
-}
-
-// AccountInfo stores latest data about our alpaca account
-type AccountInfo struct {
-	Equity           float64
-	MarginMultiplier float64
-}
-
-// StockInfo tracks our position in the stock we are watching
-type StockInfo struct {
-	Symbol   string
-	Position int64
-}
-
-// OrderInfo tracks our current order status
-type OrderInfo struct {
-	id string
+	client    interfaces.AlpacaClient
+	algorithm interfaces.AlpacaAlgorithm
+	stock     interfaces.StockInfo
+	account   interfaces.AccountInfo
+	order     interfaces.OrderInfo
 }
 
 // NewAlpacaController returns an new controller.
-func NewAlpacaController(client AlpacaClient, algorithm AlpacaAlgorithm, stock string) (AlpacaController, error) {
+func NewAlpacaController(client interfaces.AlpacaClient, algorithm interfaces.AlpacaAlgorithm, stock string) (AlpacaController, error) {
 	// Cancel any open orders so they don't interfere with this script
 	if err := client.CancelAllOrders(); err != nil {
 		return AlpacaController{}, err
@@ -48,11 +32,11 @@ func NewAlpacaController(client AlpacaClient, algorithm AlpacaAlgorithm, stock s
 	alpacaController := AlpacaController{
 		client:    client,
 		algorithm: algorithm,
-		stock: StockInfo{
+		stock: interfaces.StockInfo{
 			Symbol:   stock,
 			Position: 0,
 		},
-		account: AccountInfo{},
+		account: interfaces.AccountInfo{},
 	}
 
 	if err := alpacaController.UpdatePosition(); err != nil {
@@ -163,7 +147,7 @@ func (c *AlpacaController) handleStreamTrade(msg interface{}) {
 	}
 
 	c.algorithm.HandleStreamTrade(
-		StreamTradeParameters{
+		interfaces.StreamTradeContext{
 			Client:     c.client,
 			Stock:      c.stock,
 			Account:    c.account,
@@ -210,17 +194,17 @@ func (c *AlpacaController) handleTradeUpdate(msg interface{}) {
 			"position": c.stock.Position,
 		}).Info("Updated position")
 
-		if data.Event == "fill" && c.order.id == data.Order.ID {
+		if data.Event == "fill" && c.order.ID == data.Order.ID {
 			// Clear out completed order
-			c.order.id = ""
+			c.order.ID = ""
 		}
 	case "rejected", "canceled":
-		if c.order.id == data.Order.ID {
+		if c.order.ID == data.Order.ID {
 			// Clear out order
-			c.order.id = ""
+			c.order.ID = ""
 		}
 	case "new":
-		c.order.id = data.Order.ID
+		c.order.ID = data.Order.ID
 	default:
 		contextLog.Error("Unexpected order event type")
 	}

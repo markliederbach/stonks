@@ -1,4 +1,4 @@
-package controller
+package interfaces
 
 import (
 	"time"
@@ -22,15 +22,32 @@ type AlpacaClient interface {
 // their actions on a set of stream trades.
 type AlpacaAlgorithm interface {
 	// Given a stream trade, perform some action based on the data.
-	HandleStreamTrade(context StreamTradeParameters)
+	HandleStreamTrade(context StreamTradeContext)
 }
 
-// StreamTradeParameters encapsulates context that is passed from
+// StreamTradeContext encapsulates context that is passed from
 // a controller to the implementing algorithm
-type StreamTradeParameters struct {
+type StreamTradeContext struct {
 	Client     AlpacaClient
 	Stock      StockInfo
 	Account    AccountInfo
 	Trade      alpaca.StreamTrade
 	ContextLog *logrus.Entry
+}
+
+// AccountInfo stores latest data about our alpaca account
+type AccountInfo struct {
+	Equity           float64
+	MarginMultiplier float64
+}
+
+// StockInfo tracks our position in the stock we are watching
+type StockInfo struct {
+	Symbol   string
+	Position int64
+}
+
+// OrderInfo tracks our current order status
+type OrderInfo struct {
+	ID string
 }

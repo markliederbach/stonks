@@ -6,11 +6,11 @@ import (
 	"math"
 	"time"
 
-	"github.com/markliederbach/stonks/pkg/alpaca/controller"
+	"github.com/markliederbach/stonks/pkg/alpaca/interfaces"
 	"github.com/sirupsen/logrus"
 )
 
-var _ controller.AlpacaAlgorithm = &Martingale{}
+var _ interfaces.AlpacaAlgorithm = &Martingale{}
 
 // Martingale implements the martingale system for tracking a stock
 type Martingale struct {
@@ -35,7 +35,7 @@ func NewMartingale() (*Martingale, error) {
 }
 
 // HandleStreamTrade implements the function on the AlpacaAlgorithm interface
-func (c *Martingale) HandleStreamTrade(context controller.StreamTradeParameters) {
+func (c *Martingale) HandleStreamTrade(context interfaces.StreamTradeContext) {
 	now := time.Now().UTC()
 	if now.Sub(c.lastTradeTime) < time.Second {
 		// don't react every tick unless at least 1 second past
