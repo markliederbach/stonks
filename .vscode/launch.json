@@ -2,11 +2,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Server",
+            "name": "Launch Alpaca",
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}/pkg/server.go"
+            "program": "${workspaceFolder}/pkg/alpaca/main.go",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
