@@ -38,4 +38,4 @@ CMD ["/usr/local/bin/stonks"]
 
 # Default port to expose
 # Override with -p 9000:<host port>/tcp
-EXPOSE 9000/tcp
+# EXPOSE 9000/tcp

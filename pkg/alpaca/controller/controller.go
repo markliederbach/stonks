@@ -4,7 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/alpaca"
@@ -116,6 +119,7 @@ func (c *AlpacaController) Run() error {
 		return err
 	}
 
+	// Runs if this function ever returns
 	defer stream.Deregister(dataStreamKey)
 
 	// Register a handler for updates to our existing trade orders
@@ -123,7 +127,11 @@ func (c *AlpacaController) Run() error {
 		return err
 	}
 
+	// Runs if this function ever returns
 	defer stream.Deregister(alpaca.TradeUpdates)
+
+	// Catch CTRL-C interrupts and close streams
+	c.setupInterruptHandler([]string{dataStreamKey, alpaca.TradeUpdates})
 
 	// TODO: Uncomment to send a test order
 	// time.Sleep(time.Second * 5)
@@ -135,6 +143,21 @@ func (c *AlpacaController) Run() error {
 
 	// Sleep indefinitely while we wait for events
 	select {}
+}
+
+func (c *AlpacaController) setupInterruptHandler(streamKeys []string) {
+	ch := make(chan os.Signal)
+	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-ch
+		logrus.WithFields(logrus.Fields{"stream_keys": streamKeys}).Info("Closing Alpaca data streams")
+		for _, streamKey := range streamKeys {
+			if err := stream.Deregister(streamKey); err != nil {
+				logrus.WithFields(logrus.Fields{"stream_key": streamKey}).Warnf("Failed to deregister stream: %v", err)
+			}
+		}
+		os.Exit(1)
+	}()
 }
 
 // sendLimitOrder takes a position at which we want to have in the stock and makes it so,
