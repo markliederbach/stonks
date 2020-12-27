@@ -18,7 +18,7 @@ type AlpacaClient interface {
 }
 
 // AlpacaAlgorithm defines a contract for any implementing
-// algorithm strategy to use with out Alpaca controller.
+// algorithm strategy to use with our Alpaca controller.
 // The underlying assumption is that all algorithms will base
 // their actions on a set of stream trades.
 type AlpacaAlgorithm interface {

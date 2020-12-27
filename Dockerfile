@@ -17,7 +17,7 @@ RUN CGO_ENABLED=0 \
     GOOS=linux \
     GOARCH=amd64 \
     GO111MODULE=on \
-    go build --ldflags "-extldflags '-static'" -o /src/stonks pkg/server.go
+    go build --ldflags "-extldflags '-static'" -o /src/stonks pkg/alpaca/main.go
 
 # Build real container from scratch
 FROM scratch

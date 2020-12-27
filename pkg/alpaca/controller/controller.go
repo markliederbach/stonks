@@ -27,9 +27,9 @@ type AlpacaController struct {
 // NewAlpacaController returns an new controller.
 func NewAlpacaController(client api.AlpacaClient, algorithm api.AlpacaAlgorithm, stock string) (AlpacaController, error) {
 	// Cancel any open orders so they don't interfere with this script
-	// if err := client.CancelAllOrders(); err != nil {
-	// 	return AlpacaController{}, err
-	// }
+	if err := client.CancelAllOrders(); err != nil {
+		return AlpacaController{}, err
+	}
 
 	alpacaController := AlpacaController{
 		client:    client,
@@ -100,14 +100,14 @@ func (c *AlpacaController) UpdateAccount() error {
 // Run kicks off the main logic of this controller
 func (c *AlpacaController) Run() error {
 	// Cancel any existing orders so they don't impact our buying power.
-	// status, until, limit := "open", time.Now(), 100
-	// orders, _ := c.client.ListOrders(&status, &until, &limit, nil)
-	// for _, order := range orders {
-	// 	logrus.Debugf("Cancelling pre-existing order %s", order.ID)
-	// 	if err := c.client.CancelOrder(order.ID); err != nil {
-	// 		return err
-	// 	}
-	// }
+	status, until, limit := "open", time.Now(), 100
+	orders, _ := c.client.ListOrders(&status, &until, &limit, nil)
+	for _, order := range orders {
+		logrus.Debugf("Cancelling pre-existing order %s", order.ID)
+		if err := c.client.CancelOrder(order.ID); err != nil {
+			return err
+		}
+	}
 
 	// Register a handler for the stock stream we want to watch
 	// https://alpaca.markets/docs/api-documentation/api-v2/market-data/streaming/
@@ -125,14 +125,13 @@ func (c *AlpacaController) Run() error {
 
 	defer stream.Deregister(alpaca.TradeUpdates)
 
-	// Send a test order
-	time.Sleep(time.Second * 5)
-	orderID, err := c.sendLimitOrder(1, 192.82)
-	if err != nil {
-		return err
-	}
-
-	logrus.Infof("Created dummy order %s", orderID)
+	// TODO: Uncomment to send a test order
+	// time.Sleep(time.Second * 5)
+	// orderID, err := c.sendLimitOrder(1, 192.82)
+	// if err != nil {
+	// 	return err
+	// }
+	// logrus.Infof("Created dummy order %s", orderID)
 
 	// Sleep indefinitely while we wait for events
 	select {}
