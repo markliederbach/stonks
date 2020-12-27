@@ -130,7 +130,7 @@ func (c *AlpacaController) Run() error {
 	// Runs if this function ever returns
 	defer stream.Deregister(alpaca.TradeUpdates)
 
-	// Catch CTRL-C interrupts and close streams
+	// Add SIGTERM handler
 	c.setupInterruptHandler([]string{dataStreamKey, alpaca.TradeUpdates})
 
 	// TODO: Uncomment to send a test order
@@ -145,6 +145,7 @@ func (c *AlpacaController) Run() error {
 	select {}
 }
 
+// setupInterruptHandler catches CTRL-C interrupts and close streams
 func (c *AlpacaController) setupInterruptHandler(streamKeys []string) {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
