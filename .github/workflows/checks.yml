@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  test:
+  checks:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -26,6 +26,6 @@ jobs:
       - name: Lint
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
-          go install golang.org/x/lint/golint
+          go get golang.org/x/lint/golint
           golint --set_exit_status $(go list ./...)
           go vet ./...
