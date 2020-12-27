@@ -14,6 +14,7 @@ type AlpacaClient interface {
 	GetPosition(string) (*alpaca.Position, error)
 	CancelOrder(orderID string) error
 	ListOrders(status *string, until *time.Time, limit *int, nested *bool) ([]alpaca.Order, error)
+	PlaceOrder(req alpaca.PlaceOrderRequest) (*alpaca.Order, error)
 }
 
 // AlpacaAlgorithm defines a contract for any implementing
@@ -37,6 +38,7 @@ type StreamTradeContext struct {
 
 // AccountInfo stores latest data about our alpaca account
 type AccountInfo struct {
+	ID               string
 	Equity           float64
 	MarginMultiplier float64
 }
