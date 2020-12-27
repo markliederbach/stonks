@@ -9,10 +9,14 @@ import (
 )
 
 const (
-	alpacaAPIBaseURLVariable string = "APCA_API_BASE_URL"
-	logLevelVariable         string = "LOG_LEVEL"
+	// AlpacaAPIBaseURLVariable specifies the base URL
+	AlpacaAPIBaseURLVariable string = "APCA_API_BASE_URL"
 
-	defaultLogLevel logrus.Level = logrus.InfoLevel
+	// LogLevelVariable specifies the logging level
+	LogLevelVariable string = "APCA_LOG_LEVEL"
+
+	// DefaultLogLevel specifies the default logging level
+	DefaultLogLevel logrus.Level = logrus.InfoLevel
 )
 
 // Config holds all configuration data about the currently-running service
@@ -31,12 +35,12 @@ type Config struct {
 func Load() Config {
 	config := Config{
 		// Required
-		AlpacaAPIBaseURL:   fromEnvString(alpacaAPIBaseURLVariable, true, ""),
+		AlpacaAPIBaseURL:   fromEnvString(AlpacaAPIBaseURLVariable, true, ""),
 		AlpacaAPIKeyID:     fromEnvString(common.EnvApiKeyID, true, ""),
 		AlpacaAPISecretKey: fromEnvString(common.EnvApiSecretKey, true, ""),
 
 		// Optional
-		LogLevel: fromEnvLogLevel(logLevelVariable, false, defaultLogLevel),
+		LogLevel: fromEnvLogLevel(LogLevelVariable, false, DefaultLogLevel),
 	}
 
 	config.configureLogger()
