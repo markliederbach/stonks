@@ -22,7 +22,7 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       - name: Tests
-        run: go test ./...
+        run: go test -mod=vendor -v ./...
       - name: Lint
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
