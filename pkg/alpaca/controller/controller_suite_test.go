@@ -1,4 +1,4 @@
-package config_test
+package controller_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestConfig(t *testing.T) {
+func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Alpaca Config Suite")
+	RunSpecs(t, "Alpaca Controller Suite")
 }
