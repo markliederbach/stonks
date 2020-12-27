@@ -1,4 +1,4 @@
-name: test
+name: checks
 
 on:
   push:
@@ -21,4 +21,11 @@ jobs:
         uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go }}
-      - run: go test ./...
+      - name: Tests
+        run: go test ./...
+      - name: Lint
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go install golang.org/x/lint/golint
+          golint --set_exit_status $(go list ./...)
+          go vet ./...
