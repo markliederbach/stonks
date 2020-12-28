@@ -24,6 +24,11 @@ jobs:
       - name: Tests
         run: go test -mod=vendor -v ./...
       - name: Lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
+          version: v1.34
+      - name: Lint
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           go get golang.org/x/lint/golint
