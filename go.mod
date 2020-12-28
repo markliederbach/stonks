@@ -8,5 +8,4 @@ require (
 	github.com/onsi/gomega v1.10.4
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
-	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 )
