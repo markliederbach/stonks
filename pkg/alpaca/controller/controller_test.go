@@ -73,7 +73,7 @@ var _ = Describe("Controller", func() {
 			JustBeforeEach(func() {
 				order, err = alpacaController.SendLimitOrder(5, 1.25)
 			})
-			It("should submit a BUY order for 2 shares and return the order ID", func() {
+			It("should submit a BUY order for 2 shares and return the order", func() {
 				Expect(err).ToNot(HaveOccurred())
 				limitPrice := decimal.NewFromFloat(1.25)
 				Expect(order).To(Equal(&alpaca.Order{
@@ -85,7 +85,35 @@ var _ = Describe("Controller", func() {
 					LimitPrice:  &limitPrice,
 					TimeInForce: alpaca.Day,
 				}))
-				// TODO: test order parameters
+			})
+		})
+
+		Context("when target position is less than current position", func() {
+			JustBeforeEach(func() {
+				order, err = alpacaController.SendLimitOrder(2, 1.25)
+			})
+			It("should submit a SELL order for 1 share and return the order", func() {
+				Expect(err).ToNot(HaveOccurred())
+				limitPrice := decimal.NewFromFloat(1.25)
+				Expect(order).To(Equal(&alpaca.Order{
+					ID:          "order123",
+					Symbol:      stock,
+					Side:        alpaca.Sell,
+					Type:        alpaca.Limit,
+					Qty:         decimal.NewFromFloat(1),
+					LimitPrice:  &limitPrice,
+					TimeInForce: alpaca.Day,
+				}))
+			})
+		})
+
+		Context("when target position is equal to the current position", func() {
+			JustBeforeEach(func() {
+				order, err = alpacaController.SendLimitOrder(3, 1.25)
+			})
+			It("should return an error for no-op", func() {
+				Expect(err).To(MatchError("no-op order requested"))
+				Expect(order).To(Equal(&alpaca.Order{}))
 			})
 		})
 	})
