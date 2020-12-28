@@ -35,4 +35,6 @@ CMD [ "sleep", "infinity" ]
 # Install VS Code Go deps
 RUN set -ex \
     && go get -v golang.org/x/tools/gopls \
-    && go get -v github.com/go-delve/delve/cmd/dlv
+    && go get -v github.com/go-delve/delve/cmd/dlv \
+    && curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest \
+    && sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin

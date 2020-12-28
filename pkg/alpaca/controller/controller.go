@@ -120,7 +120,7 @@ func (c *AlpacaController) Run() error {
 	}
 
 	// Runs if this function ever returns
-	defer stream.Deregister(dataStreamKey)
+	defer c.deferDeregister(dataStreamKey)
 
 	// Register a handler for updates to our existing trade orders
 	if err := stream.Register(alpaca.TradeUpdates, c.handleTradeUpdate); err != nil {
@@ -128,7 +128,7 @@ func (c *AlpacaController) Run() error {
 	}
 
 	// Runs if this function ever returns
-	defer stream.Deregister(alpaca.TradeUpdates)
+	defer c.deferDeregister(alpaca.TradeUpdates)
 
 	// Add SIGTERM handler
 	c.setupInterruptHandler([]string{dataStreamKey, alpaca.TradeUpdates})
@@ -159,6 +159,12 @@ func (c *AlpacaController) setupInterruptHandler(streamKeys []string) {
 		}
 		os.Exit(1)
 	}()
+}
+
+func (c *AlpacaController) deferDeregister(streamKey string) {
+	if err := stream.Deregister(streamKey); err != nil {
+		logrus.Error(err)
+	}
 }
 
 // SendLimitOrder takes a position at which we want to have in the stock and makes it so,

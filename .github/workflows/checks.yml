@@ -1,4 +1,4 @@
-name: checks
+name: Checks
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  checks:
+  check:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -24,8 +24,6 @@ jobs:
       - name: Tests
         run: go test -mod=vendor -v ./...
       - name: Lint
-        run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
-          go get golang.org/x/lint/golint
-          golint --set_exit_status $(go list ./...)
-          go vet ./...
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.34
