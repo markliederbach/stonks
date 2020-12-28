@@ -20,11 +20,11 @@ import (
 // AlpacaController is the backbone of the system, which supports pluggable
 // underlying algorithms.
 type AlpacaController struct {
-	client    api.AlpacaClient
-	algorithm api.AlpacaAlgorithm
-	stock     api.StockInfo
-	account   api.AccountInfo
-	order     api.OrderInfo
+	Client    api.AlpacaClient
+	Algorithm api.AlpacaAlgorithm
+	Stock     api.StockInfo
+	Account   api.AccountInfo
+	Order     api.OrderInfo
 }
 
 // NewAlpacaController returns an new controller.
@@ -35,13 +35,13 @@ func NewAlpacaController(client api.AlpacaClient, algorithm api.AlpacaAlgorithm,
 	}
 
 	alpacaController := AlpacaController{
-		client:    client,
-		algorithm: algorithm,
-		stock: api.StockInfo{
+		Client:    client,
+		Algorithm: algorithm,
+		Stock: api.StockInfo{
 			Symbol:   stock,
 			Position: 0,
 		},
-		account: api.AccountInfo{},
+		Account: api.AccountInfo{},
 	}
 
 	if err := alpacaController.UpdatePosition(); err != nil {
@@ -53,10 +53,10 @@ func NewAlpacaController(client api.AlpacaClient, algorithm api.AlpacaAlgorithm,
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"stock":        alpacaController.stock.Symbol,
-		"position":     alpacaController.stock.Position,
-		"equity":       math.Round(alpacaController.account.Equity*100) / 100,
-		"buying_power": math.Round(alpacaController.account.MarginMultiplier*alpacaController.account.Equity*100) / 100,
+		"stock":        alpacaController.Stock.Symbol,
+		"position":     alpacaController.Stock.Position,
+		"equity":       math.Round(alpacaController.Account.Equity*100) / 100,
+		"buying_power": math.Round(alpacaController.Account.MarginMultiplier*alpacaController.Account.Equity*100) / 100,
 	}).Debugf("Loaded initial state")
 
 	return alpacaController, nil
@@ -65,7 +65,7 @@ func NewAlpacaController(client api.AlpacaClient, algorithm api.AlpacaAlgorithm,
 // UpdatePosition refreshes our current position for a stock
 func (c *AlpacaController) UpdatePosition() error {
 	var position int64 = 0
-	stockPosition, err := c.client.GetPosition(c.stock.Symbol)
+	stockPosition, err := c.Client.GetPosition(c.Stock.Symbol)
 	if err != nil {
 		if err.Error() != "position does not exist" {
 			return err
@@ -74,7 +74,7 @@ func (c *AlpacaController) UpdatePosition() error {
 		position = stockPosition.Qty.IntPart()
 	}
 
-	c.stock.Position = position
+	c.Stock.Position = position
 
 	return nil
 }
@@ -82,7 +82,7 @@ func (c *AlpacaController) UpdatePosition() error {
 // UpdateAccount refreshes our available equity and margin from Alpaca
 func (c *AlpacaController) UpdateAccount() error {
 	// Figure out how much money we have to work with, accounting for margin
-	accountState, err := c.client.GetAccount()
+	accountState, err := c.Client.GetAccount()
 	if err != nil {
 		return err
 	}
@@ -93,9 +93,9 @@ func (c *AlpacaController) UpdateAccount() error {
 		return err
 	}
 
-	c.account.ID = accountState.ID
-	c.account.Equity = equity
-	c.account.MarginMultiplier = marginMultiplier
+	c.Account.ID = accountState.ID
+	c.Account.Equity = equity
+	c.Account.MarginMultiplier = marginMultiplier
 
 	return nil
 }
@@ -104,17 +104,17 @@ func (c *AlpacaController) UpdateAccount() error {
 func (c *AlpacaController) Run() error {
 	// Cancel any existing orders so they don't impact our buying power.
 	status, until, limit := "open", time.Now(), 100
-	orders, _ := c.client.ListOrders(&status, &until, &limit, nil)
+	orders, _ := c.Client.ListOrders(&status, &until, &limit, nil)
 	for _, order := range orders {
 		logrus.Debugf("Cancelling pre-existing order %s", order.ID)
-		if err := c.client.CancelOrder(order.ID); err != nil {
+		if err := c.Client.CancelOrder(order.ID); err != nil {
 			return err
 		}
 	}
 
 	// Register a handler for the stock stream we want to watch
 	// https://alpaca.markets/docs/api-documentation/api-v2/market-data/streaming/
-	dataStreamKey := fmt.Sprintf("T.%s", c.stock.Symbol)
+	dataStreamKey := fmt.Sprintf("T.%s", c.Stock.Symbol)
 	if err := stream.Register(dataStreamKey, c.handleStreamTrade); err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (c *AlpacaController) Run() error {
 
 	// TODO: Uncomment to send a test order
 	// time.Sleep(time.Second * 5)
-	// orderID, err := c.sendLimitOrder(1, 192.82)
+	// orderID, err := c.SendLimitOrder(1, 192.82)
 	// if err != nil {
 	// 	return err
 	// }
@@ -161,10 +161,10 @@ func (c *AlpacaController) setupInterruptHandler(streamKeys []string) {
 	}()
 }
 
-// sendLimitOrder takes a position at which we want to have in the stock and makes it so,
+// SendLimitOrder takes a position at which we want to have in the stock and makes it so,
 // either by selling or buying shares.
-func (c *AlpacaController) sendLimitOrder(targetPosition int, targetPrice float64) (string, error) {
-	delta := math.Max(float64(targetPosition), 0) - math.Max(float64(c.stock.Position), 0)
+func (c *AlpacaController) SendLimitOrder(targetPosition int, targetPrice float64) (string, error) {
+	delta := math.Max(float64(targetPosition), 0) - math.Max(float64(c.Stock.Position), 0)
 
 	var (
 		side     alpaca.Side
@@ -186,9 +186,9 @@ func (c *AlpacaController) sendLimitOrder(targetPosition int, targetPrice float6
 
 	limitPrice := decimal.NewFromFloat(targetPrice)
 
-	order, err := c.client.PlaceOrder(alpaca.PlaceOrderRequest{
-		AccountID:   c.account.ID,
-		AssetKey:    &c.stock.Symbol,
+	order, err := c.Client.PlaceOrder(alpaca.PlaceOrderRequest{
+		AccountID:   c.Account.ID,
+		AssetKey:    &c.Stock.Symbol,
 		Qty:         decimal.NewFromFloat(quantity),
 		Side:        side,
 		Type:        alpaca.Limit,
@@ -218,16 +218,16 @@ func (c *AlpacaController) handleStreamTrade(msg interface{}) {
 
 	contextLog.Info("Handling stream trade event")
 
-	if data.Symbol != c.stock.Symbol {
+	if data.Symbol != c.Stock.Symbol {
 		logrus.Infof("Ignoring stream trade event for unrelated stock %s", data.Symbol)
 		return
 	}
 
-	c.algorithm.HandleStreamTrade(
+	c.Algorithm.HandleStreamTrade(
 		api.StreamTradeContext{
-			Client:     c.client,
-			Stock:      c.stock,
-			Account:    c.account,
+			Client:     c.Client,
+			Stock:      c.Stock,
+			Account:    c.Account,
 			Trade:      data,
 			ContextLog: contextLog,
 		},
@@ -254,7 +254,7 @@ func (c *AlpacaController) handleTradeUpdate(msg interface{}) {
 
 	contextLog.Info("Handling trade update")
 
-	if data.Order.Symbol != c.stock.Symbol {
+	if data.Order.Symbol != c.Stock.Symbol {
 		logrus.Infof("Ignoring trade update for unrelated stock %s", data.Order.Symbol)
 		return
 	}
@@ -268,20 +268,20 @@ func (c *AlpacaController) handleTradeUpdate(msg interface{}) {
 		}
 		contextLog.WithFields(logrus.Fields{
 			"symbol":   data.Order.Symbol,
-			"position": c.stock.Position,
+			"position": c.Stock.Position,
 		}).Info("Updated position")
 
-		if data.Event == "fill" && c.order.ID == data.Order.ID {
+		if data.Event == "fill" && c.Order.ID == data.Order.ID {
 			// Clear out completed order
-			c.order.ID = ""
+			c.Order.ID = ""
 		}
 	case "rejected", "canceled":
-		if c.order.ID == data.Order.ID {
+		if c.Order.ID == data.Order.ID {
 			// Clear out order
-			c.order.ID = ""
+			c.Order.ID = ""
 		}
 	case "new":
-		c.order.ID = data.Order.ID
+		c.Order.ID = data.Order.ID
 	default:
 		contextLog.Error("Unexpected order event type")
 	}
