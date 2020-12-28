@@ -1,120 +1,162 @@
 package internal
 
 import (
+	"errors"
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/alpaca"
 	"github.com/markliederbach/stonks/pkg/alpaca/api"
+	"github.com/shopspring/decimal"
 )
+
+var (
+	objChs map[string]chan interface{} = make(map[string]chan interface{})
+)
+
+type void struct{}
+
+func init() {
+	functions := []string{
+		"CancelAllOrders",
+		"GetAccount",
+		"GetPosition",
+		"CancelOrder",
+		"ListOrders",
+		"PlaceOrder",
+	}
+
+	for _, functionName := range functions {
+		// Create a channel to pass in return objects for a function
+		objChs[functionName] = make(chan interface{}, 100)
+	}
+}
+
+// getObj looks up the next object return from a channel, defaults if none exists
+func getObj(functionName string) interface{} {
+	select {
+	case obj := <-objChs[functionName]:
+		return obj
+	default:
+		return void{}
+	}
+}
+
+// AddObjReturns allows a test to add one or more object returns for a function
+func AddObjReturns(functionName string, objs ...interface{}) error {
+	for _, obj := range objs {
+		ch, ok := objChs[functionName]
+		if !ok {
+			return errors.New("Function channel does not exist")
+		}
+		ch <- obj
+	}
+	return nil
+}
 
 // MockAlpacaClient mocks the Alpaca SDK client
 type MockAlpacaClient struct {
-	Errors         []error
-	Account        alpaca.Account
-	Position       alpaca.Position
-	ListOrderStack [][]alpaca.Order
-	OrderStack     []alpaca.Order
-}
-
-// MockAlpacaClientInput provides optional fields to set on the mock client
-type MockAlpacaClientInput struct {
-	Errors         []error
-	Account        alpaca.Account
-	Position       alpaca.Position
-	ListOrderStack [][]alpaca.Order
-	OrderStack     []alpaca.Order
+	api.AlpacaClient
 }
 
 // NewMockAlpacaClient returns a new mock algorithm
-func NewMockAlpacaClient(input MockAlpacaClientInput) api.AlpacaClient {
-	return &MockAlpacaClient{
-		Errors:         input.Errors,
-		Account:        input.Account,
-		Position:       input.Position,
-		ListOrderStack: input.ListOrderStack,
-		OrderStack:     input.OrderStack,
-	}
+func NewMockAlpacaClient() api.AlpacaClient {
+	return &MockAlpacaClient{}
 }
 
 // CancelAllOrders implements the corresponding function on api.AlpacaClient
 func (mc *MockAlpacaClient) CancelAllOrders() error {
-	if err := mc.popError(); err != nil {
-		return err
+	funcitonName := "CancelAllOrders"
+	obj := getObj(funcitonName)
+	switch obj := obj.(type) {
+	case error:
+		return obj
+	default:
+		return nil
 	}
-	return nil
 }
 
 // CancelOrder implements the corresponding function on api.AlpacaClient
 func (mc *MockAlpacaClient) CancelOrder(orderID string) error {
-	if err := mc.popError(); err != nil {
-		return err
+	funcitonName := "CancelOrder"
+	obj := getObj(funcitonName)
+	switch obj := obj.(type) {
+	case error:
+		return obj
+	default:
+		return nil
 	}
-	return nil
 }
 
 // GetAccount implements the corresponding function on api.AlpacaClient
 func (mc *MockAlpacaClient) GetAccount() (*alpaca.Account, error) {
-	if err := mc.popError(); err != nil {
-		return &alpaca.Account{}, err
+	funcitonName := "GetAccount"
+	obj := getObj(funcitonName)
+	switch obj := obj.(type) {
+	case *alpaca.Account:
+		return obj, nil
+	case error:
+		return &alpaca.Account{}, obj
+	default:
+		return &alpaca.Account{
+			ID:         "account123",
+			Equity:     decimal.NewFromFloat(1000),
+			Multiplier: "2.00",
+		}, nil
 	}
-	return &mc.Account, nil
 }
 
 // GetPosition implements the corresponding function on api.AlpacaClient
 func (mc *MockAlpacaClient) GetPosition(string) (*alpaca.Position, error) {
-	if err := mc.popError(); err != nil {
-		return &alpaca.Position{}, err
+	funcitonName := "GetPosition"
+	obj := getObj(funcitonName)
+	switch obj := obj.(type) {
+	case *alpaca.Position:
+		return obj, nil
+	case error:
+		return &alpaca.Position{}, obj
+	default:
+		return &alpaca.Position{
+			Qty: decimal.NewFromFloat(3.5),
+		}, nil
 	}
-	return &mc.Position, nil
 }
 
 // ListOrders implements the corresponding function on api.AlpacaClient
 func (mc *MockAlpacaClient) ListOrders(status *string, until *time.Time, limit *int, nested *bool) ([]alpaca.Order, error) {
-	if err := mc.popError(); err != nil {
-		return []alpaca.Order{}, err
+	funcitonName := "ListOrders"
+	obj := getObj(funcitonName)
+	switch obj := obj.(type) {
+	case []alpaca.Order:
+		return obj, nil
+	case error:
+		return []alpaca.Order{}, obj
+	default:
+		return []alpaca.Order{
+			{ID: "foobar123"},
+		}, nil
 	}
-	return mc.popListOrders(), nil
 }
 
 // PlaceOrder implements the corresponding function on api.AlpacaClient
 func (mc *MockAlpacaClient) PlaceOrder(req alpaca.PlaceOrderRequest) (*alpaca.Order, error) {
-	if err := mc.popError(); err != nil {
-		return &alpaca.Order{}, err
+	funcitonName := "PlaceOrder"
+	obj := getObj(funcitonName)
+	switch obj := obj.(type) {
+	case *alpaca.Order:
+		return obj, nil
+	case error:
+		return &alpaca.Order{ID: "this should not be read"}, obj
+	default:
+		return &alpaca.Order{
+			ID:          "order123",
+			Symbol:      *req.AssetKey,
+			Side:        req.Side,
+			Type:        req.Type,
+			Qty:         req.Qty,
+			LimitPrice:  req.LimitPrice,
+			TimeInForce: req.TimeInForce,
+		}, nil
 	}
-	return mc.popOrder(), nil
-}
-
-func (mc *MockAlpacaClient) popError() error {
-	if mc.Errors == nil || len(mc.Errors) == 0 {
-		return nil
-	}
-
-	nextError := mc.Errors[0]
-	mc.Errors = mc.Errors[1:]
-
-	return nextError
-}
-
-func (mc *MockAlpacaClient) popOrder() *alpaca.Order {
-	if mc.OrderStack == nil || len(mc.OrderStack) == 0 {
-		return &alpaca.Order{}
-	}
-
-	nextOrder := mc.OrderStack[0]
-	mc.OrderStack = mc.OrderStack[1:]
-
-	return &nextOrder
-}
-
-func (mc *MockAlpacaClient) popListOrders() []alpaca.Order {
-	if mc.ListOrderStack == nil || len(mc.ListOrderStack) == 0 {
-		return []alpaca.Order{}
-	}
-
-	nextListOrder := mc.ListOrderStack[0]
-	mc.ListOrderStack = mc.ListOrderStack[1:]
-
-	return nextListOrder
 }
 
 // MockAlgorithm mocks an algorithm handler and tracks
