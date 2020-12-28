@@ -1,4 +1,4 @@
-name: checks
+name: Checks
 
 on:
   push:
@@ -27,4 +27,3 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.34
-          args: --print-issued-lines
