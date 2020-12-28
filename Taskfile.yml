@@ -1,0 +1,16 @@
+version: "3"
+
+tasks:
+  checks:
+    desc: Run tests and linting checks
+    cmds:
+      - task: test
+      - task: lint
+  test:
+    desc: Run unit tests
+    cmds:
+      - go test -mod=vendor -v ./...
+  lint:
+    desc: Run linters
+    cmds:
+      - golangci-lint run
