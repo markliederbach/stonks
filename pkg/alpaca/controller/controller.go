@@ -163,7 +163,7 @@ func (c *AlpacaController) setupInterruptHandler(streamKeys []string) {
 
 // SendLimitOrder takes a position at which we want to have in the stock and makes it so,
 // either by selling or buying shares.
-func (c *AlpacaController) SendLimitOrder(targetPosition int, targetPrice float64) (string, error) {
+func (c *AlpacaController) SendLimitOrder(targetPosition int, targetPrice float64) (*alpaca.Order, error) {
 	delta := math.Max(float64(targetPosition), 0) - math.Max(float64(c.Stock.Position), 0)
 
 	var (
@@ -173,7 +173,7 @@ func (c *AlpacaController) SendLimitOrder(targetPosition int, targetPrice float6
 
 	if delta == 0 {
 		// We are already at our target position
-		return "", errors.New("no-op order requested")
+		return &alpaca.Order{}, errors.New("no-op order requested")
 	}
 
 	if delta > 0 {
@@ -197,10 +197,10 @@ func (c *AlpacaController) SendLimitOrder(targetPosition int, targetPrice float6
 	})
 
 	if err != nil {
-		return "", err
+		return &alpaca.Order{}, err
 	}
 
-	return order.ID, nil
+	return order, nil
 }
 
 // Listen for quote data and perform trading logic

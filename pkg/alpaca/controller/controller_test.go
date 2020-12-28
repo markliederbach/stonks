@@ -2,7 +2,6 @@ package controller_test
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/alpacahq/alpaca-trade-api-go/alpaca"
 	"github.com/markliederbach/stonks/pkg/alpaca/api"
@@ -23,23 +22,8 @@ var _ = Describe("Controller", func() {
 	)
 
 	Context("when creating a default controller", func() {
-		var (
-			equity       = float64(1000)
-			multiplier   = float64(2.00)
-			mockSettings = internal.MockAlpacaClientInput{
-				Account: alpaca.Account{
-					ID:         "foobar",
-					Equity:     decimal.NewFromFloat(equity),
-					Multiplier: fmt.Sprintf("%.2f", multiplier),
-				},
-				Position: alpaca.Position{
-					Qty: decimal.NewFromFloat(3.5),
-				},
-			}
-		)
-
 		JustBeforeEach(func() {
-			mockClient = internal.NewMockAlpacaClient(mockSettings)
+			mockClient = internal.NewMockAlpacaClient()
 			mockAlgorithm = internal.NewMockAlgorithm()
 			alpacaController, err = controller.NewAlpacaController(mockClient, mockAlgorithm, stock)
 		})
@@ -49,9 +33,9 @@ var _ = Describe("Controller", func() {
 		})
 		It("should have initial account and position stats", func() {
 			Expect(alpacaController.Account).To(Equal(api.AccountInfo{
-				ID:               mockSettings.Account.ID,
-				Equity:           equity,
-				MarginMultiplier: multiplier,
+				ID:               "account123",
+				Equity:           float64(1000),
+				MarginMultiplier: float64(2.00),
 			}))
 			Expect(alpacaController.Stock).To(Equal(api.StockInfo{
 				Symbol:   stock,
@@ -61,10 +45,7 @@ var _ = Describe("Controller", func() {
 
 		Context("when no existing positions are found", func() {
 			BeforeEach(func() {
-				mockSettings.Errors = []error{
-					nil,                                   // CancelAllOrders
-					errors.New("position does not exist"), // GetPosition
-				}
+				internal.AddObjReturns("GetPosition", errors.New("position does not exist"))
 			})
 			It("should report zero shares", func() {
 				Expect(err).ToNot(HaveOccurred())
@@ -79,40 +60,38 @@ var _ = Describe("Controller", func() {
 
 	Context("when placing an order", func() {
 		var (
-			orderID      string
-			equity       = float64(1000)
-			multiplier   = float64(2.00)
-			mockSettings = internal.MockAlpacaClientInput{
-				Account: alpaca.Account{
-					ID:         "foobar",
-					Equity:     decimal.NewFromFloat(equity),
-					Multiplier: fmt.Sprintf("%.2f", multiplier),
-				},
-				Position: alpaca.Position{
-					Qty: decimal.NewFromFloat(3.5),
-				},
-				OrderStack: []alpaca.Order{
-					{ID: "foobar123"}, // PlaceOrder
-				},
-			}
+			order *alpaca.Order
 		)
 
 		JustBeforeEach(func() {
-			mockClient = internal.NewMockAlpacaClient(mockSettings)
+			mockClient = internal.NewMockAlpacaClient()
 			mockAlgorithm = internal.NewMockAlgorithm()
 			alpacaController, err = controller.NewAlpacaController(mockClient, mockAlgorithm, stock)
 		})
 
 		Context("when target position is greater than current position", func() {
 			JustBeforeEach(func() {
-				orderID, err = alpacaController.SendLimitOrder(5, 1.25)
+				order, err = alpacaController.SendLimitOrder(5, 1.25)
 			})
 			It("should submit a BUY order for 2 shares and return the order ID", func() {
 				Expect(err).ToNot(HaveOccurred())
-				Expect(orderID).To(Equal("foobar123"))
+				limitPrice := decimal.NewFromFloat(1.25)
+				Expect(order).To(Equal(&alpaca.Order{
+					ID:          "order123",
+					Symbol:      stock,
+					Side:        alpaca.Buy,
+					Type:        alpaca.Limit,
+					Qty:         decimal.NewFromFloat(2),
+					LimitPrice:  &limitPrice,
+					TimeInForce: alpaca.Day,
+				}))
 				// TODO: test order parameters
 			})
 		})
 	})
 
 })
+
+func stringPointer(str string) *string {
+	return &str
+}
