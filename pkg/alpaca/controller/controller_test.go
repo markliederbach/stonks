@@ -45,7 +45,8 @@ var _ = Describe("Controller", func() {
 
 		Context("when no existing positions are found", func() {
 			BeforeEach(func() {
-				internal.AddObjReturns("GetPosition", errors.New("position does not exist"))
+				err := internal.AddObjReturns("GetPosition", errors.New("position does not exist"))
+				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should report zero shares", func() {
 				Expect(err).ToNot(HaveOccurred())
@@ -119,7 +120,3 @@ var _ = Describe("Controller", func() {
 	})
 
 })
-
-func stringPointer(str string) *string {
-	return &str
-}
